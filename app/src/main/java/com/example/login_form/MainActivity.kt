@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LoginformTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    // pass full size minus padding to login form
                     LoginForm(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -56,15 +57,23 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LoginForm(modifier: Modifier = Modifier) {
+    // local state variables, just for practise -> functionality not really needed for UI demo
     var username by remember { mutableStateOf("")}
     var password by remember { mutableStateOf("")}
+    //variables for error handling after submitting
+    var submitted by remember {mutableStateOf(false)} // initially false
+    // check that username email-value has correct format ("@" and ".com/etc")
+    val emailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(username).matches()
+    val showEmailError = submitted && !username.isEmpty() && !emailValid
+    val passwordError = submitted && password.isEmpty()
 
-    val roundedShape = RoundedCornerShape(6.dp)
+    // input field styling modifier, reusable for both fields
     val inputFieldStyle = Modifier
         .padding(12.dp)
-        .border(2.dp, Color.Gray, roundedShape)
+        .border(2.dp, Color.Gray, RoundedCornerShape(6.dp))
         .fillMaxWidth()
 
+    // button styling modifier
     val buttonStyle = Modifier
         .padding(8.dp)
         .fillMaxWidth()
@@ -83,28 +92,51 @@ fun LoginForm(modifier: Modifier = Modifier) {
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold
         )
+        // username (email) input field
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            placeholder = { Text("Username")},
+            placeholder = {
+                Text(
+                    text = "Username (email)",
+                    color = Color.Gray // muted placeholder text
+                )},
             singleLine = true,
             modifier = inputFieldStyle,
+            /* keyboard options tells the system what type of input is expected
+               so appropriate keyboard can be shown (e.g. including "@" character) */
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email
             ),
-            // icon at the end of the input field (trailing)
+            // icon at the end of the input field (trailing, could also be leading)
             trailingIcon = { Icon(
                 Icons.Default.Email,
                 contentDescription = "email-icon",
                 modifier = Modifier.padding(4.dp)
-            ) }
+            ) },
+            /* if email is missing required characters, error is set to be true
+               and input fields get red error color for cursor and icon by default */
+            isError = showEmailError
         )
+            // error handling display for incorrect email-type
+            if (showEmailError) {
+                Text(
+                    text = "Please enter valid email address",
+                    color = Color.Red,
+                    modifier = Modifier.padding(5.dp)
+                ) }
+
+        // password input field
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
-            placeholder = { Text("Password") },
+            placeholder = {
+                Text(
+                    text = "Password",
+                    color = Color.Gray
+                ) },
             modifier = inputFieldStyle,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
@@ -113,11 +145,21 @@ fun LoginForm(modifier: Modifier = Modifier) {
                 Icons.Default.Lock,
                 contentDescription = "password-lock-icon",
                 modifier = Modifier.padding(4.dp)
-            ) }
+            ) },
+            isError = passwordError
         )
+            // error display for empty password
+            if (passwordError) {
+                Text(
+                    text = "Password can't be empty",
+                    color = Color.Red,
+                    modifier = Modifier.padding(5.dp)
+                )}
+
         Button(
+            // no redirect functionality, just error messages to composable UI
             onClick = {
-                println("User $username has logged in")
+                submitted = true
             },
             modifier = buttonStyle,
             shape = ButtonDefaults.shape,
